@@ -1,34 +1,33 @@
 #######################################################
 ### Active Set Algorithm for the Computation of the ###
 ### NPMLE of a Log-Convex, Isotonic Density Ratio   ###
-### with respect to a Gamma Distribution            ###
 #######################################################
 #
 # Lutz Duembgen, Alexandre Moesching, Christof Straehl
-# June 2021
+# December 2020
 #
-# Source: 
+# Source:
+# L. Duembgen, A. Moesching, C. Straehl (2021).
 # Active Set Algorithms for Estimating Shape-Constrained
-# Density Ratios, arXiv:1808.09340
+# Density Ratios.
+# Computational Statistics and Data Analysis 163.
+# arXiv:1808.09340
 
-### Main programs:
+### Main programs ----
 
 TailInflation.B0 <- function(X, W=rep(1/length(X),length(X)),
 	alpha=1, beta=1,
 	xmin=0, xmax=1.1*max(X),
 	delta1=10^(-10)/length(X),
 	delta2=10^(-3)*sqrt(alpha)/length(X))
-# Computation of a log-convex and increasing density ratio
-# with respect to the Gamma distribution with shape alpha and
-# rate beta.
+# Computation of a log-convex and increasing density ratio with respect to
+# the Gamma distribution with shape alpha and rate beta..
 # Graphical display of all intermediate steps...
 {
 	# If X ~ P, where P(dx) = e^{theta(x)} P_{alpha,beta}(dx)
 	# with P_{alpha,beta} the Gamma distribution with
 	# shape alpha and rate beta, then beta*X ~ Pt, where
-	#    Pt(dx) = exp(thetat(x)) P_{alpha,1}(dx)
-	# and
-	#    thetat(x) = theta(x/beta).
+	# Pt(dx) = e^thetat(x) P_alpha,1(dx) and thetat(x) = theta(x/beta).
 	# Hence we multiply the data by beta, estimate thetat and obtain
 	# theta(x) = thetat(x*beta) in the end.
 	X <- X*beta
@@ -256,9 +255,9 @@ TailInflation.B <- function(X, W=rep(1/length(X),length(X)),
 	alpha=1, beta=1,
 	delta1=10^(-10)/length(X),
 	delta2=10^(-3)*sqrt(alpha)/length(X))
-# Computation of a log-convex and increasing density ratio with
-# respect to the Gamma distribution with shape alpha and rate beta.
-# Pure computation, no graphical displays, no counting...
+# Computation of a log-convex and increasing density ratio with respect to
+# the Gamma distribution with shape alpha and rate beta..
+# Pure computation, no graphical displays...
 {
 	# If X ~ P, where P(dx) = e^theta(x) P_alpha,beta(dx)
 	# with P_alpha,beta the Gamma distribution with
@@ -314,10 +313,17 @@ TailInflation.B <- function(X, W=rep(1/length(X),length(X)),
 			theta[2] <- theta[2]*beta
 		}
 		return(list(tau=tau,theta=theta,x=x,w=w,m=m,
-			LL=LL))
+			LL=LL,
+			nr.local.search=0,
+			nr.Newton=0))
 	}
 	
+	# Bookkeeping:
+	nr.local.search <- 0
+	nr.Newton <- 0
+	
 	while (max(ht0) > delta2){
+		nr.local.search <- nr.local.search + 1
 		# Store current value of LL:
 		LL.old <- LL
 		# Add new knots
@@ -328,6 +334,7 @@ TailInflation.B <- function(X, W=rep(1/length(X),length(X)),
 		wt <- LocalLinearSplines2.2B(tau,x,w)
 		
 		proposal <- LocalNewton.2B(wt,tau,theta,alpha,delta1)
+		nr.Newton <- nr.Newton + 1
 		while (proposal$dirderiv > delta1){
 			theta.new <- proposal$theta.new
 			# 2nd step size correction:
@@ -347,6 +354,7 @@ TailInflation.B <- function(X, W=rep(1/length(X),length(X)),
 			LL <- sum(wt*theta)
 			if (LL > LL.ref){
 				proposal <- LocalNewton.2B(wt,tau,theta,alpha,delta1)
+				nr.Newton <- nr.Newton + 1
 			}else{
 				proposal$dirderiv <- 0	
 			}
@@ -375,10 +383,12 @@ TailInflation.B <- function(X, W=rep(1/length(X),length(X)),
 	theta[length(tau)+1] <- beta*theta[length(tau)+1]
 	
 	return(list(tau=tau,theta=theta,x=x,w=w,m=length(tau),
-		LL=LL))
+		LL=LL,
+		nr.local.search=nr.local.search,
+		nr.Newton=nr.Newton))
 }
 
-### Auxiliary programs 4:
+### Auxiliary programs 4 ----
 ### Checking for knew potential knots
 
 LocalNewKnots.2B <- function(tau,theta,t0,ht0,delta=0)
@@ -774,7 +784,7 @@ Optimality2.2B <- function(x,w,tau,theta,alpha=1,
 }
 
 
-### Auxiliary programs 3:
+### Auxiliary programs 3 ----
 ### 2nd step size correction
 
 LocalConvexity.2B <- function(tau,theta)
@@ -867,10 +877,9 @@ LocalStepSize2.2B <- function(tau,theta,theta.new,
 	return(list(tau=tau,theta=theta,isnewknot=isnewknot))
 }
 
-### Auxiliary programs 2:
-### Normalization,
-### log-likelihood and its derivatives,
-### Newton step with 1st step size correction
+### Auxiliary programs 2 ----
+### Normalization, log-likelihood plus derivatives
+### and Newton step with 1st step size correction
 
 LocalNormalize.2B <- function(tau,theta,alpha=1)
 # Normalize theta such that it defines
@@ -1011,7 +1020,7 @@ LocalNewton.2B <- function(wt,tau,theta,alpha=1,delta0=10^(-11))
 		LL=LL,LL.new=LL.new))
 }
 
-### Auxiliary programs 1:
+### Auxiliary programs 1 ----
 ### Linear splines and
 ### Basic functions J(.,.), K(.,.) plus 1st and 2nd
 ### partial derivatives
@@ -1287,7 +1296,7 @@ LocalInterpolate <- function(x,d)
 	return(xx)
 }
 
-### Auxiliary programs 0:
+### Auxiliary programs 0 ----
 ### Data preparation,
 ### data simulation and
 ### plotting functions

@@ -1,26 +1,28 @@
-##########################################################
-### Active Set Algorithm for the Computation of the    ###
-### NPMLE of a Log-Convex Density Ratio                ###
-### with respect to the Standard Gaussian Distribution ###
-##########################################################
+#######################################################
+### Active Set Algorithm for the Computation of the ###
+### NPMLE of a Log-Convex Density Ratio             ###
+#######################################################
 #
 # Lutz Duembgen, Alexandre Moesching, Christof Straehl
-# June 2021
+# December 2020
 #
-# Source: 
+# Source:
+# L. Duembgen, A. Moesching, C. Straehl (2021).
 # Active Set Algorithms for Estimating Shape-Constrained
-# Density Ratios, arXiv:1808.09340
+# Density Ratios.
+# Computational Statistics and Data Analysis 163.
+# arXiv:1808.09340
 
 
-### Main programs:
+### Main programs ----
 
 TailInflation.A0 <- function(X,W=rep(1,length(X)),
 	xmin=1.1*min(X)-0.1*max(X),
 	xmax=1.1*max(X)-0.1*min(X),
 	delta1=10^(-10)/length(X),
 	delta2=10^(-3)/length(X))
-# Computation of a log-convex density ratio with respect
-# to the standard Gaussian distribution.
+# Computation of a log-convex density ratio with respect to
+# the standard Gaussian distribution.
 # Graphical display of all intermediate steps...
 {
 	# Preparations of raw data:
@@ -205,9 +207,9 @@ TailInflation.A0 <- function(X,W=rep(1,length(X)),
 TailInflation.A <- function(X,W=rep(1,length(X)),
 	delta1=10^(-10)/length(X),
 	delta2=10^(-3)/length(X))
-# Computation of a log-convex density ratio with respect
-# to the standard Gaussian distribution.
-# Pure computation, no graphical displays, no counting...
+# Computation of a log-convex density ratio with respect to
+# the standard Gaussian distribution.
+# Pure computation, no graphical displays...
 {
 	# Preparations of raw data:
 	n <- length(X)
@@ -232,13 +234,19 @@ TailInflation.A <- function(X,W=rep(1,length(X)),
 	}
 	
 	if (ht0 < delta2){
-		return(list(tau=NULL,theta=mu,x=x,w=w,m=0,LL=LL))
+		return(list(tau=NULL,theta=mu,x=x,w=w,m=0,
+			LL=LL,nr.local.search=0,nr.Newton=0))
 	}
 	
+	# Bookkeeping:
+	nr.local.search <- 0
+	nr.Newton <- 0
+
 	tau <- NULL
 	theta <- mu
 	
 	while (max(ht0) > delta2){
+		nr.local.search <- nr.local.search + 1
 		# Store current value of LL:
 		LL.old <- LL
 		# Add new knots
@@ -249,6 +257,7 @@ TailInflation.A <- function(X,W=rep(1,length(X)),
 		
 		wt <- LocalLinearSplines2.2A(tau,x,w)
 		proposal <- LocalNewton.2A(wt,tau,theta,delta1)
+		nr.Newton <- nr.Newton + 1
 		while (proposal$dirderiv > delta1){
 			theta.new <- proposal$theta.new
 			# 2nd step size correction:
@@ -268,6 +277,7 @@ TailInflation.A <- function(X,W=rep(1,length(X)),
 			LL <- sum(wt*theta)
 			if (LL > LL.ref){
 				proposal <- LocalNewton.2A(wt,tau,theta,delta1)
+				nr.Newton <- nr.Newton + 1
 			}else{
 				proposal$dirderiv <- 0
 			}
@@ -289,10 +299,12 @@ TailInflation.A <- function(X,W=rep(1,length(X)),
 			ht0 <- 0
 		}
 	}
-	return(list(tau=tau,theta=theta,x=x,w=w,m=length(tau),LL=LL))
+	return(list(tau=tau,theta=theta,x=x,w=w,m=length(tau),
+		LL=LL,
+		nr.local.search=nr.local.search,nr.Newton=nr.Newton))
 }
 
-### Auxiliary programs 4:
+### Auxiliary programs 4 ----
 ### Checking for new potential knots 
 
 LocalNewKnots.2A <- function(tau,theta,t0,ht0,delta=0)
@@ -629,7 +641,7 @@ Optimality2.2A <- function(x,w,tau,theta)
 }
 
 
-### Auxiliary programs 3:
+### Auxiliary programs 3 ----
 ### 2nd step size correction
 
 LocalConvexity.2A <- function(tau,theta)
@@ -721,7 +733,7 @@ LocalStepSize2.2A <- function(tau,theta,theta.new,
 	return(list(tau=tau,theta=theta,isnewknot=isnewknot))
 }
 
-### Auxiliary programs 2:
+### Auxiliary programs 2 ----
 ### Normalization, log-likelihood plus derivatives
 ### and Newton step with 1st step size correction
 
@@ -872,7 +884,7 @@ LocalNewton.2A <- function(wt,tau,theta,
 }
 
 
-### Auxiliary programs 1:
+### Auxiliary programs 1 ----
 ### Linear splines and
 ### Basic functions J(.,.), K(.,.) plus 1st and 2nd
 ### partial derivatives
@@ -1095,7 +1107,7 @@ LocalInterpolate <- function(x,d)
 	return(xx)
 }
 
-### Auxiliary program 0:
+### Auxiliary program 0 ----
 
 LocalPrepareData <- function(X,W)
 # Replace a data vector X with weights W
